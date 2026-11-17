@@ -414,6 +414,29 @@ def test_GPS_update_from_GSA(r):
         assert gps.vdop == 4.0
 
 
+@pytest.mark.parametrize(
+    "r",
+    (
+        pytest.param(
+            b"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.5,1.2,0.9*3F\r\n",
+            id="12 satellites, 17 fields",
+        ),
+        pytest.param(
+            b"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.5,1.2,0.9,1*22\r\n",
+            id="12 satellites, 18 fields",
+        ),
+    ),
+)
+def test_GPS_update_from_GSA_all_12_satellites(r):
+    with mock.patch.object(GPS, "readline", return_value=r):
+        gps = GPS(uart=UartMock())
+        assert gps.update()
+        assert gps.sat_prns == [f"GP{n}" for n in range(1, 13)]
+        assert gps.pdop == 1.5
+        assert gps.hdop == 1.2
+        assert gps.vdop == 0.9
+
+
 def test_GPS_update_from_GSV_first_part():
     r = b"$GPGSV,2,1,08,01,40,083,46,02,17,308,41,12,07,344,39,14,22,228,45*75\r\n"
     with mock.patch.object(GPS, "readline", return_value=r):
